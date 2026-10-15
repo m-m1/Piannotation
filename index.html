@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Piannotation</title>
+  <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
+  <style>
+    :root {
+      --bg-color: #0b1120;
+      --card-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.35);
+    }
+
+    * { 
+      box-sizing: border-box; 
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: env(safe-area-inset-top, 16px) 12px env(safe-area-inset-bottom, 16px) 12px;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      user-select: none;
+    }
+
+    header {
+      margin-top: 8px;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.subtitle {
+      margin: 4px 0 0 0;
+      color: var(--text-sub);
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    /* Metronome Toolbar */
+    .metronome-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 8px 16px;
+      border-radius: 9999px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+
+    .metro-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: #334155;
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .metro-btn:active {
+      background: #475569;
+    }
+
+    .bpm-input-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    input#bpmInput {
+      width: 52px;
+      background: transparent;
+      border: none;
+      color: var(--accent);
+      font-size: 1.25rem;
+      font-weight: 800;
+      text-align: center;
+      outline: none;
+    }
+
+    .bpm-label {
+      font-size: 0.75rem;
+      color: var(--text-sub);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    button#btnToggleMetro {
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border-radius: 9999px;
+      border: none;
+      background: #0284c7;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button#btnToggleMetro.active {
+      background: #ef4444;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    }
+
+    /* Actions Bar */
+    .actions-bar {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-secondary {
+      padding: 7px 16px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #1e293b;
+      color: var(--text-sub);
+      cursor: pointer;
+    }
+
+    .btn-secondary:active {
+      background: #334155;
+      color: #fff;
+    }
+
+    #debug-info {
+      font-size: 0.75rem;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    /* Output Badge */
+    #output-badge {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 18px;
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      box-shadow: 0 4px 18px rgba(0,0,0,0.3);
+      margin-bottom: 12px;
+      max-width: 92vw;
+      white-space: nowrap;
+      overflow-x: auto;
+    }
+
+    .section-label {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+    }
+
+    /* Live Staff */
+    #current-staff-card {
+      background: #ffffff;
+      padding: 8px 12px;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-width: 250px;
+      min-height: 230px;
+    }
+
+    /* Keyboard */
+    .keyboard-scroll-wrap {
+      margin-top: 14px;
+      max-width: 96vw;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      border-radius: 8px;
+    }
+
+    #keyboard {
+      position: relative;
+      display: inline-flex;
+      background: #000;
+      padding: 10px 6px 6px 6px;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      direction: ltr;
+    }
+
+    .key {
+      position: relative;
+      border-radius: 0 0 4px 4px;
+      transition: background-color 0.1s ease, transform 0.05s ease;
+    }
+
+    .key.white {
+      width: 20px;
+      height: 105px;
+      background: #fdfdfd;
+      border: 1px solid #ccc;
+      border-top: none;
+      z-index: 1;
+      margin-right: -1px;
+    }
+
+    .key.black {
+      width: 13px;
+      height: 66px;
+      background: #18181b;
+      margin-left: -6.5px;
+      margin-right: -6.5px;
+      z-index: 2;
+      border: 1px solid #000;
+      box-shadow: inset 0 -2px 3px rgba(255,255,255,0.15);
+    }
+
+    .key.pressed {
+      transform: translateY(3px);
+    }
+
+    /* History Staff */
+    .history-scroll-wrap {
+      margin-top: 6px;
+      max-width: 96vw;
+      background: #ffffff;
+      border-radius: 14px;
+      overflow-x: auto;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      padding: 10px 12px;
+      direction: ltr;
+    }
+
+    #historyStaff {
+      min-height: 230px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Piannotation</h1>
+    <p class="subtitle">Real-time pitch detection & continuous staff notation</p>
+  </header>
+
+  <!-- Metronome -->
+  <div class="metronome-bar">
+    <button class="metro-btn" id="btnBpmDown">−</button>
+    <div class="bpm-input-wrap">
+      <input type="number" id="bpmInput" value="120" min="40" max="240">
+      <span class="bpm-label">BPM</span>
+    </div>
+    <button class="metro-btn" id="btnBpmUp">+</button>
+    <button id="btnToggleMetro">START</button>
+  </div>
+
+  <div class="actions-bar">
+    <button class="btn-secondary" id="btnReconnect">MIDI: Auto-Connecting...</button>
+    <button class="btn-secondary" id="btnClearHistory">Clear Notation</button>
+  </div>
+
+  <div id="debug-info">Scanning for MIDI devices...</div>
+  <div id="output-badge">Play keys on your piano...</div>
+
+  <div class="section-label">Live Voicing</div>
+  <div id="current-staff-card">
+    <div id="currentStaff"></div>
+  </div>
+
+  <div class="keyboard-scroll-wrap">
+    <div id="keyboard"></div>
+  </div>
+
+  <div class="section-label" style="margin-top: 14px;">Notation Stream</div>
+  <div class="history-scroll-wrap" id="historyWrap">
+    <div id="historyStaff"></div>
+  </div>
+
+  <script>
+    const VF = Vex.Flow;
+
+    const noteMap = [
+      { letter: "c",  base: "c", isSharp: false, name: "C",  solfege: "Do",  color: "#ef4444" },
+      { letter: "c#", base: "c", isSharp: true,  name: "C#", solfege: "Do#", color: "#f87171" },
+      { letter: "d",  base: "d", isSharp: false, name: "D",  solfege: "Re",  color: "#f97316" },
+      { letter: "d#", base: "d", isSharp: true,  name: "D#", solfege: "Re#", color: "#fb923c" },
+      { letter: "e",  base: "e", isSharp: false, name: "E",  solfege: "Mi",  color: "#eab308" },
+      { letter: "f",  base: "f", isSharp: false, name: "F",  solfege: "Fa",  color: "#22c55e" },
+      { letter: "f#", base: "f", isSharp: true,  name: "F#", solfege: "Fa#", color: "#4ade80" },
+      { letter: "g",  base: "g", isSharp: false, name: "G",  solfege: "Sol", color: "#3b82f6" },
+      { letter: "g#", base: "g", isSharp: true,  name: "G#", solfege: "Sol#",color: "#60a5fa" },
+      { letter: "a",  base: "a", isSharp: false, name: "A",  solfege: "La",  color: "#a855f7" },
+      { letter: "a#", base: "a", isSharp: true,  name: "A#", solfege: "La#", color: "#c084fc" },
+      { letter: "b",  base: "b", isSharp: false, name: "B",  solfege: "Si",  color: "#ec4899" }
+    ];
+
+    // Build Keyboard
+    const keyboardEl = document.getElementById("keyboard");
+    const keyElements = new Map();
+
+    for (let midi = 21; midi <= 108; midi++) {
+      const data = noteMap[midi % 12];
+      const el = document.createElement("div");
+      el.className = `key ${data.isSharp ? 'black' : 'white'}`;
+      el.dataset.midi = midi;
+      keyboardEl.appendChild(el);
+      keyElements.set(midi, { el, data });
+    }
+
+    // State
+    const activeKeys = new Set();
+    const historyEvents = [];
+    let pendingChordTimeout = null;
+    let currentChordNotes = [];
+
+    // Metronome Implementation (Web Audio)
+    let audioCtx = null;
+    let isMetroRunning = false;
+    let metroInterval = null;
+    let currentBpm = 120;
+
+    const bpmInput = document.getElementById("bpmInput");
+    const btnToggleMetro = document.getElementById("btnToggleMetro");
+
+    function playClick() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 1000;
+      gain.gain.setValueAtTime(1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.05);
+    }
+
+    function startMetronome() {
+      if (metroInterval) clearInterval(metroInterval);
+      const intervalMs = (60 / currentBpm) * 1000;
+      playClick();
+      metroInterval = setInterval(playClick, intervalMs);
+      isMetroRunning = true;
+      btnToggleMetro.innerText = "STOP";
+      btnToggleMetro.classList.add("active");
+    }
+
+    function stopMetronome() {
+      if (metroInterval) clearInterval(metroInterval);
+      isMetroRunning = false;
+      btnToggleMetro.innerText = "START";
+      btnToggleMetro.classList.remove("active");
+    }
+
+    btnToggleMetro.addEventListener("click", () => {
+      if (isMetroRunning) stopMetronome();
+      else startMetronome();
+    });
+
+    document.getElementById("btnBpmDown").addEventListener("click", () => {
+      currentBpm = Math.max(40, currentBpm - 5);
+      bpmInput.value = currentBpm;
+      if (isMetroRunning) startMetronome();
+    });
+
+    document.getElementById("btnBpmUp").addEventListener("click", () => {
+      currentBpm = Math.min(240, currentBpm + 5);
+      bpmInput.value = currentBpm;
+      if (isMetroRunning) startMetronome();
+    });
+
+    bpmInput.addEventListener("change", () => {
+      let val = parseInt(bpmInput.value, 10);
+      if (isNaN(val)) val = 120;
+      currentBpm = Math.max(40, Math.min(240, val));
+      bpmInput.value = currentBpm;
+      if (isMetroRunning) startMetronome();
+    });
+
+    // Auto-Connect MIDI
+    document.getElementById("btnReconnect").addEventListener("click", initMIDI);
+    document.getElementById("btnClearHistory").addEventListener("click", () => {
+      historyEvents.length = 0;
+      renderHistoryStaff();
+    });
+
+    function initMIDI() {
+      if (!navigator.requestMIDIAccess) {
+        document.getElementById("debug-info").innerText = "Web MIDI API not supported in this browser.";
+        return;
+      }
+      navigator.requestMIDIAccess({ sysex: false }).then(onMIDISuccess, (err) => {
+        document.getElementById("debug-info").innerText = "MIDI Access Denied: " + err;
+      });
+    }
+
+    function bindInputs(midiAccess) {
+      const inputs = [];
+      midiAccess.inputs.forEach((input) => {
+        input.onmidimessage = handleMIDIMessage;
+        inputs.push(input.name || "MIDI Device");
+      });
+
+      const debug = document.getElementById("debug-info");
+      const btn = document.getElementById("btnReconnect");
+      if (inputs.length > 0) {
+        debug.innerText = `Connected: ${inputs.join(", ")}`;
+        btn.innerText = `MIDI: Connected (${inputs.length})`;
+      } else {
+        debug.innerText = "Listening for MIDI hardware...";
+        btn.innerText = "MIDI: Reconnect";
+      }
+    }
+
+    function onMIDISuccess(midiAccess) {
+      bindInputs(midiAccess);
+      midiAccess.onstatechange = () => bindInputs(midiAccess);
+    }
+
+    // Auto-trigger on load
+    window.addEventListener("DOMContentLoaded", () => {
+      initMIDI();
+      renderCurrentStaff([]);
+    });
+
+    function handleMIDIMessage(event) {
+      const [status, noteNumber, velocity] = event.data;
+      const command = status & 0xf0;
+
+      if (command === 0x90 && velocity > 0) {
+        activeKeys.add(noteNumber);
+        highlightKey(noteNumber);
+        recordForHistory(noteNumber);
+        updateLiveView();
+      } else if (command === 0x80 || (command === 0x90 && velocity === 0)) {
+        activeKeys.delete(noteNumber);
+        unhighlightKey(noteNumber);
+        updateLiveView();
+      }
+    }
+
+    function highlightKey(midi) {
+      const item = keyElements.get(midi);
+      if (!item) return;
+      item.el.classList.add("pressed");
+      item.el.style.backgroundColor = item.data.color;
+      item.el.style.boxShadow = `0 0 12px ${item.data.color}`;
+    }
+
+    function unhighlightKey(midi) {
+      const item = keyElements.get(midi);
+      if (!item) return;
+      item.el.classList.remove("pressed");
+      item.el.style.backgroundColor = item.data.isSharp ? '#18181b' : '#fdfdfd';
+      item.el.style.boxShadow = item.data.isSharp ? 'inset 0 -2px 3px rgba(255,255,255,0.15)' : 'none';
+    }
+
+    function recordForHistory(midi) {
+      currentChordNotes.push(midi);
+      clearTimeout(pendingChordTimeout);
+      pendingChordTimeout = setTimeout(() => {
+        if (currentChordNotes.length > 0) {
+          const chord = Array.from(new Set(currentChordNotes)).sort((a, b) => a - b);
+          historyEvents.push(chord);
+          currentChordNotes = [];
+          renderHistoryStaff();
+        }
+      }, 35);
+    }
+
+    function updateLiveView() {
+      const badge = document.getElementById("output-badge");
+      if (activeKeys.size === 0) {
+        badge.innerText = "Keys released - waiting...";
+        badge.style.color = "var(--accent)";
+        renderCurrentStaff([]);
+        return;
+      }
+
+      const sorted = Array.from(activeKeys).sort((a, b) => a - b);
+      const labels = sorted.map(m => {
+        const d = noteMap[m % 12];
+        const oct = Math.floor(m / 12) - 1;
+        return `${d.name}${oct} (${d.solfege})`;
+      });
+
+      badge.innerText = labels.join(" • ");
+      renderCurrentStaff(sorted);
+    }
+
+    function buildClefNote(notes, clef) {
+      const filtered = notes.filter(n => clef === "treble" ? n >= 60 : n < 60);
+      if (filtered.length === 0) {
+        return new VF.StaveNote({
+          clef: clef,
+          keys: [clef === "treble" ? "b/4" : "d/3"],
+          duration: "wr"
+        });
+      }
+
+      const keys = [];
+      const accidentals = [];
+      filtered.forEach((midi, idx) => {
+        const data = noteMap[midi % 12];
+        const oct = Math.floor(midi / 12) - 1;
+        keys.push(`${data.base}/${oct}`);
+        if (data.isSharp) accidentals.push(idx);
+      });
+
+      const staveNote = new VF.StaveNote({ clef, keys, duration: "w" });
+      accidentals.forEach(i => staveNote.addModifier(new VF.Accidental("#"), i));
+      return staveNote;
+    }
+
+    function renderCurrentStaff(midiArray) {
+      const container = document.getElementById("currentStaff");
+      container.innerHTML = "";
+
+      const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
+      renderer.resize(250, 230);
+      const context = renderer.getContext();
+
+      const trebleStave = new VF.Stave(20, 10, 200);
+      trebleStave.addClef("treble").setContext(context).draw();
+
+      const bassStave = new VF.Stave(20, 115, 200);
+      bassStave.addClef("bass").setContext(context).draw();
+
+      new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.BRACE).setContext(context).draw();
+      new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(context).draw();
+
+      if (midiArray.length > 0) {
+        const tNote = buildClefNote(midiArray, "treble");
+        const bNote = buildClefNote(midiArray, "bass");
+        VF.Formatter.FormatAndDraw(context, trebleStave, [tNote]);
+        VF.Formatter.FormatAndDraw(context, bassStave, [bNote]);
+      }
+    }
+
+    function renderHistoryStaff() {
+      const container = document.getElementById("historyStaff");
+      container.innerHTML = "";
+      if (historyEvents.length === 0) return;
+
+      const spacing = 75;
+      const width = Math.max(300, 70 + historyEvents.length * spacing);
+
+      const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
+      renderer.resize(width, 230);
+      const context = renderer.getContext();
+
+      const trebleStave = new VF.Stave(20, 10, width - 30);
+      trebleStave.addClef("treble").setContext(context).draw();
+
+      const bassStave = new VF.Stave(20, 115, width - 30);
+      bassStave.addClef("bass").setContext(context).draw();
+
+      new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.BRACE).setContext(context).draw();
+      new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(context).draw();
+
+      const tNotes = [];
+      const bNotes = [];
+
+      historyEvents.forEach(chord => {
+        tNotes.push(buildClefNote(chord, "treble"));
+        bNotes.push(buildClefNote(chord, "bass"));
+      });
+
+      const voiceT = new VF.Voice({ num_beats: historyEvents.length, beat_value: 1 }).setStrict(false);
+      voiceT.addTickables(tNotes);
+
+      const voiceB = new VF.Voice({ num_beats: historyEvents.length, beat_value: 1 }).setStrict(false);
+      voiceB.addTickables(bNotes);
+
+      new VF.Formatter().joinVoices([voiceT]).joinVoices([voiceB]).format([voiceT, voiceB], width - 90);
+
+      voiceT.draw(context, trebleStave);
+      voiceB.draw(context, bassStave);
+
+      const wrap = document.getElementById("historyWrap");
+      wrap.scrollLeft = wrap.scrollWidth;
+    }
+  </script>
+</body>
+</html>
