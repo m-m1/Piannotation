@@ -12,7 +12,7 @@
       --text-main: #f8fafc;
       --text-sub: #94a3b8;
       --accent: #38bdf8;
-      --accent-glow: rgba(56, 189, 248, 0.35);
+      --switch-active: #0284c7;
     }
 
     * { 
@@ -59,20 +59,22 @@
     /* Metronome Toolbar */
     .metronome-bar {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 12px;
       background: var(--card-bg);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 8px 16px;
+      padding: 8px 18px;
       border-radius: 9999px;
       margin-bottom: 12px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      max-width: 96vw;
     }
 
     .metro-btn {
-      width: 32px;
-      height: 32px;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
       border: none;
       background: #334155;
@@ -83,7 +85,6 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: background 0.15s ease;
     }
 
     .metro-btn:active {
@@ -93,25 +94,59 @@
     .bpm-input-wrap {
       display: flex;
       align-items: baseline;
-      gap: 4px;
+      gap: 3px;
     }
 
     input#bpmInput {
-      width: 52px;
+      width: 48px;
       background: transparent;
       border: none;
       color: var(--accent);
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       font-weight: 800;
       text-align: center;
       outline: none;
     }
 
     .bpm-label {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: var(--text-sub);
       font-weight: 600;
       text-transform: uppercase;
+    }
+
+    /* Time Signature Select */
+    .select-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    select#metroSignature {
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #f8fafc;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 8px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    select#metroSignature option {
+      background: #1e293b;
+      color: #fff;
+    }
+
+    /* Accent Toggle in Metronome */
+    .metro-accent-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--text-sub);
+      font-weight: 600;
     }
 
     button#btnToggleMetro {
@@ -131,13 +166,101 @@
       box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
     }
 
-    /* Actions Bar */
-    .actions-bar {
+    /* Controls & Toggles Toolbar */
+    .controls-panel {
       display: flex;
-      gap: 8px;
-      justify-content: center;
-      margin-bottom: 8px;
       flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 10px 18px;
+      border-radius: 16px;
+      margin-bottom: 12px;
+      max-width: 96vw;
+    }
+
+    .switch-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--text-sub);
+      font-weight: 600;
+    }
+
+    .switch-label {
+      cursor: pointer;
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 22px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #334155;
+      transition: .25s;
+      border-radius: 22px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .25s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--switch-active);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(18px);
+    }
+
+    /* Multi-Mode Pill Switch */
+    .segmented-control {
+      display: inline-flex;
+      background: #0f172a;
+      border-radius: 9999px;
+      padding: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .segment-btn {
+      padding: 5px 12px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      border-radius: 9999px;
+      border: none;
+      background: transparent;
+      color: var(--text-sub);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .segment-btn.active {
+      background: var(--switch-active);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
     }
 
     .btn-secondary {
@@ -149,17 +272,11 @@
       background: #1e293b;
       color: var(--text-sub);
       cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .btn-secondary.active {
-      background: #0284c7;
-      color: #ffffff;
-      border-color: #38bdf8;
     }
 
     .btn-secondary:active {
       background: #334155;
+      color: #fff;
     }
 
     #debug-info {
@@ -176,7 +293,7 @@
 
     /* Output Badge */
     #output-badge {
-      min-height: 44px;
+      min-height: 42px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -184,50 +301,28 @@
       background: var(--card-bg);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 12px;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 700;
       color: var(--accent);
       box-shadow: 0 4px 18px rgba(0,0,0,0.3);
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       max-width: 92vw;
       white-space: nowrap;
       overflow-x: auto;
     }
 
-    .section-header-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      max-width: 96vw;
-      padding: 0 4px;
-      margin-bottom: 6px;
-      margin-top: 14px;
-    }
-
-    .section-label {
-      font-size: 0.8rem;
-      color: var(--text-sub);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-weight: 700;
-    }
-
-    /* Staff Cards */
-    #current-staff-card, .history-scroll-wrap {
+    /* Main Staff Card */
+    #current-staff-card {
       background: #ffffff;
+      padding: 10px 14px;
       border-radius: 14px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-      direction: ltr;
-    }
-
-    #current-staff-card {
-      padding: 8px 12px;
       display: flex;
       justify-content: center;
       align-items: center;
       min-width: 250px;
       min-height: 230px;
+      direction: ltr;
     }
 
     /* Keyboard */
@@ -282,14 +377,41 @@
       transform: translateY(3px);
     }
 
-    .history-scroll-wrap {
+    /* Continuous Stream Section */
+    #streamSection {
+      width: 100%;
       max-width: 96vw;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 14px;
+    }
+
+    .stream-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      margin-bottom: 6px;
+      padding: 0 4px;
+    }
+
+    .stream-label {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+    }
+
+    .history-scroll-wrap {
+      width: 100%;
+      background: #ffffff;
+      border-radius: 14px;
       overflow-x: auto;
       padding: 10px 12px;
+      direction: ltr;
       min-height: 230px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
     }
 
     #historyStaff {
@@ -302,10 +424,10 @@
 
   <header>
     <h1>Piannotation</h1>
-    <p class="subtitle">Real-time pitch detection & continuous staff notation</p>
+    <p class="subtitle">Real-time pitch detection & notation</p>
   </header>
 
-  <!-- Metronome -->
+  <!-- Metronome Toolbar with Time Signatures and Accent Switch -->
   <div class="metronome-bar">
     <button class="metro-btn" id="btnBpmDown">−</button>
     <div class="bpm-input-wrap">
@@ -313,36 +435,90 @@
       <span class="bpm-label">BPM</span>
     </div>
     <button class="metro-btn" id="btnBpmUp">+</button>
+
+    <!-- Time Signature Selector -->
+    <div class="select-wrap">
+      <select id="metroSignature">
+        <optgroup label="Standard / Simple">
+          <option value="4/4" selected>4/4</option>
+          <option value="3/4">3/4</option>
+          <option value="2/4">2/4</option>
+          <option value="2/2">2/2</option>
+        </optgroup>
+        <optgroup label="Compound / Triple">
+          <option value="6/8">6/8</option>
+          <option value="9/8">9/8</option>
+          <option value="12/8">12/8</option>
+        </optgroup>
+        <optgroup label="Odd / Complex">
+          <option value="5/4">5/4</option>
+          <option value="5/8">5/8</option>
+          <option value="7/4">7/4</option>
+          <option value="7/8">7/8</option>
+          <option value="11/8">11/8</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <!-- Accent First Beat Toggle -->
+    <div class="metro-accent-wrap">
+      <span>Accent 1st:</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="switchAccent" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
     <button id="btnToggleMetro">START</button>
   </div>
 
-  <div class="actions-bar">
+  <!-- Settings Bar -->
+  <div class="controls-panel">
     <button class="btn-secondary" id="btnReconnect">MIDI: Auto-Connecting...</button>
-    <button class="btn-secondary active" id="btnToggleDualMiddle">Dual Middle Octaves (C3–C5): ON</button>
-    <button class="btn-secondary" id="btnToggleViewMode">Mode: Single Stave</button>
+
+    <!-- Middle Octaves C3-C5 Switch -->
+    <div class="switch-group">
+      <span class="switch-label">Middle Octaves (C3–C5):</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="switchDualMiddle" checked>
+        <span class="slider"></span>
+      </label>
+      <span id="textDualMiddle" style="color: var(--accent); font-weight:700;">ON</span>
+    </div>
+
+    <!-- Mode Switch (Single vs Continuous) -->
+    <div class="switch-group">
+      <span>Mode:</span>
+      <div class="segmented-control">
+        <button class="segment-btn active" id="btnModeSingle">Single</button>
+        <button class="segment-btn" id="btnModeStream">Continuous</button>
+      </div>
+    </div>
   </div>
 
   <div id="debug-info">Scanning for MIDI devices...</div>
   <div id="demo-tip">💡 No MIDI? Click or touch on-screen keys, or use your computer keyboard (A-K)!</div>
   <div id="output-badge">Play keys on your piano or screen...</div>
 
-  <div class="section-label">Live Voicing</div>
+  <!-- Primary Staff Card -->
   <div id="current-staff-card">
     <div id="currentStaff"></div>
   </div>
 
+  <!-- Keyboard -->
   <div class="keyboard-scroll-wrap" id="kbWrap">
     <div id="keyboard"></div>
   </div>
 
-  <!-- Bottom Staff Section with Local Clear -->
-  <div class="section-header-row">
-    <div class="section-label" id="bottomStaffLabel">Last Played Notation (Single)</div>
-    <button class="btn-secondary" id="btnClearHistory" style="display: none;">Clear Notation</button>
-  </div>
-
-  <div class="history-scroll-wrap" id="historyWrap">
-    <div id="historyStaff"></div>
+  <!-- Stream Section -->
+  <div id="streamSection" style="display: none;">
+    <div class="stream-header">
+      <div class="stream-label">Continuous Notation Stream</div>
+      <button class="btn-secondary" id="btnClearHistory">Clear</button>
+    </div>
+    <div class="history-scroll-wrap" id="historyWrap">
+      <div id="historyStaff"></div>
+    </div>
   </div>
 
   <script>
@@ -363,9 +539,8 @@
       { letter: "b",  base: "b", isSharp: false, name: "B",  solfege: "Si",  color: "#ec4899" }
     ];
 
-    // Options & State
     let dualMiddleOctaves = true;
-    let viewMode = "single"; // "single" | "stream"
+    let viewMode = "single";
 
     const physicallyHeldKeys = new Set();
     let displayedNotes = [];
@@ -373,7 +548,7 @@
     let pendingChordTimeout = null;
     let currentChordNotes = [];
 
-    // Realistic Web Audio Acoustic Piano Synthesizer
+    // --- High-Quality Acoustic Piano Synthesis ---
     let audioCtx = null;
     const activeVoices = new Map();
 
@@ -400,18 +575,17 @@
       const freq = midiToFreq(midi);
       const now = ctx.currentTime;
 
-      // Filter (simulates hammer dampening)
       const filter = ctx.createBiquadFilter();
       filter.type = "lowpass";
-      filter.frequency.setValueAtTime(Math.min(freq * 5.5, 9000), now);
-      filter.frequency.exponentialRampToValueAtTime(Math.max(freq * 1.5, 400), now + 1.8);
+      filter.frequency.setValueAtTime(Math.min(freq * 6, 8500), now);
+      filter.frequency.exponentialRampToValueAtTime(Math.max(freq * 1.8, 450), now + 2.5);
 
       const mainGain = ctx.createGain();
-      mainGain.gain.setValueAtTime(0.001, now);
-      mainGain.gain.linearRampToValueAtTime(0.65, now + 0.012); // Sharp piano attack
-      mainGain.gain.exponentialRampToValueAtTime(0.35, now + 0.25); // Initial decay
+      mainGain.gain.setValueAtTime(0.0001, now);
+      mainGain.gain.linearRampToValueAtTime(0.7, now + 0.015);
+      mainGain.gain.exponentialRampToValueAtTime(0.2, now + 0.8);
+      mainGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.8);
 
-      // Oscillators (Harmonics: Fundamental + Overtone + Hammer Strike)
       const osc1 = ctx.createOscillator();
       osc1.type = "sine";
       osc1.frequency.setValueAtTime(freq, now);
@@ -420,20 +594,25 @@
       osc2.type = "triangle";
       osc2.frequency.setValueAtTime(freq * 2, now);
 
-      const gain2 = ctx.createGain();
-      gain2.gain.value = 0.35;
+      const osc3 = ctx.createOscillator();
+      osc3.type = "sine";
+      osc3.frequency.setValueAtTime(freq * 3, now);
+
+      const g2 = ctx.createGain(); g2.gain.value = 0.28;
+      const g3 = ctx.createGain(); g3.gain.value = 0.12;
 
       osc1.connect(mainGain);
-      osc2.connect(gain2);
-      gain2.connect(mainGain);
+      osc2.connect(g2); g2.connect(mainGain);
+      osc3.connect(g3); g3.connect(mainGain);
 
       mainGain.connect(filter);
       filter.connect(ctx.destination);
 
       osc1.start(now);
       osc2.start(now);
+      osc3.start(now);
 
-      activeVoices.set(midi, { oscs: [osc1, osc2], mainGain, filter });
+      activeVoices.set(midi, { oscs: [osc1, osc2, osc3], mainGain });
     }
 
     function stopPianoTone(midi, immediate = false) {
@@ -441,7 +620,7 @@
       if (!voice) return;
       const ctx = getAudioContext();
       const now = ctx.currentTime;
-      const releaseTime = immediate ? 0.05 : 0.85; // Natural piano ring-out sustain
+      const releaseTime = immediate ? 0.05 : 1.2;
 
       voice.mainGain.gain.cancelScheduledValues(now);
       voice.mainGain.gain.setValueAtTime(voice.mainGain.gain.value, now);
@@ -456,7 +635,7 @@
       activeVoices.delete(midi);
     }
 
-    // Build Keyboard
+    // --- Build Keyboard ---
     const keyboardEl = document.getElementById("keyboard");
     const keyElements = new Map();
 
@@ -484,31 +663,58 @@
       keyElements.set(midi, { el, data });
     }
 
-    // Metronome
+    // --- Metronome Engine with Signatures & Accent ---
     let isMetroRunning = false;
     let metroInterval = null;
     let currentBpm = 120;
+    let currentBeatInBar = 0;
 
     const bpmInput = document.getElementById("bpmInput");
     const btnToggleMetro = document.getElementById("btnToggleMetro");
+    const metroSignature = document.getElementById("metroSignature");
+    const switchAccent = document.getElementById("switchAccent");
+
+    function getSignatureDetails() {
+      const parts = metroSignature.value.split("/");
+      return {
+        beats: parseInt(parts[0], 10),
+        unit: parseInt(parts[1], 10)
+      };
+    }
 
     function playClick() {
       const ctx = getAudioContext();
+      const { beats } = getSignatureDetails();
+      const shouldAccent = switchAccent.checked && currentBeatInBar === 0;
+
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
+
       osc.type = "sine";
-      osc.frequency.value = 1000;
-      gain.gain.setValueAtTime(1, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+      osc.frequency.value = shouldAccent ? 1600 : 900;
+
+      const peakGain = shouldAccent ? 1.0 : 0.6;
+      gain.gain.setValueAtTime(peakGain, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (shouldAccent ? 0.06 : 0.04));
+
       osc.connect(gain);
       gain.connect(ctx.destination);
+
       osc.start();
-      osc.stop(ctx.currentTime + 0.05);
+      osc.stop(ctx.currentTime + 0.07);
+
+      currentBeatInBar = (currentBeatInBar + 1) % beats;
     }
 
     function startMetronome() {
       if (metroInterval) clearInterval(metroInterval);
-      const intervalMs = (60 / currentBpm) * 1000;
+      currentBeatInBar = 0;
+
+      const { unit } = getSignatureDetails();
+      // For /8 time signatures, interval is half of /4 tempo
+      const multiplier = unit === 8 ? 0.5 : (unit === 2 ? 2.0 : 1.0);
+      const intervalMs = (60 / currentBpm) * 1000 * multiplier;
+
       playClick();
       metroInterval = setInterval(playClick, intervalMs);
       isMetroRunning = true;
@@ -519,6 +725,7 @@
     function stopMetronome() {
       if (metroInterval) clearInterval(metroInterval);
       isMetroRunning = false;
+      currentBeatInBar = 0;
       btnToggleMetro.innerText = "START";
       btnToggleMetro.classList.remove("active");
     }
@@ -548,46 +755,52 @@
       if (isMetroRunning) startMetronome();
     });
 
-    // Option Toggles
-    const btnToggleDualMiddle = document.getElementById("btnToggleDualMiddle");
-    btnToggleDualMiddle.addEventListener("click", () => {
-      dualMiddleOctaves = !dualMiddleOctaves;
-      btnToggleDualMiddle.innerText = `Dual Middle Octaves (C3–C5): ${dualMiddleOctaves ? 'ON' : 'OFF'}`;
-      btnToggleDualMiddle.classList.toggle("active", dualMiddleOctaves);
+    metroSignature.addEventListener("change", () => {
+      if (isMetroRunning) startMetronome();
+    });
+
+    // --- Options Logic ---
+    const switchDualMiddle = document.getElementById("switchDualMiddle");
+    const textDualMiddle = document.getElementById("textDualMiddle");
+
+    switchDualMiddle.addEventListener("change", (e) => {
+      dualMiddleOctaves = e.target.checked;
+      textDualMiddle.innerText = dualMiddleOctaves ? "ON" : "OFF";
+      textDualMiddle.style.color = dualMiddleOctaves ? "var(--accent)" : "var(--text-sub)";
       updateLiveVoicingDisplay();
-      renderBottomStaff();
+      if (viewMode === "stream") renderHistoryStaff();
     });
 
-    const btnToggleViewMode = document.getElementById("btnToggleViewMode");
-    const bottomStaffLabel = document.getElementById("bottomStaffLabel");
-    const btnClearHistory = document.getElementById("btnClearHistory");
+    const btnModeSingle = document.getElementById("btnModeSingle");
+    const btnModeStream = document.getElementById("btnModeStream");
+    const streamSection = document.getElementById("streamSection");
 
-    btnToggleViewMode.addEventListener("click", () => {
-      if (viewMode === "single") {
-        viewMode = "stream";
-        btnToggleViewMode.innerText = "Mode: Stream (Continuous)";
-        bottomStaffLabel.innerText = "Continuous Notation Stream";
-        btnClearHistory.style.display = "inline-block";
-      } else {
-        viewMode = "single";
-        btnToggleViewMode.innerText = "Mode: Single Stave";
-        bottomStaffLabel.innerText = "Last Played Notation (Single)";
-        btnClearHistory.style.display = "none";
-      }
-      renderBottomStaff();
+    btnModeSingle.addEventListener("click", () => {
+      viewMode = "single";
+      btnModeSingle.classList.add("active");
+      btnModeStream.classList.remove("active");
+      streamSection.style.display = "none";
     });
 
-    btnClearHistory.addEventListener("click", () => {
+    btnModeStream.addEventListener("click", () => {
+      viewMode = "stream";
+      btnModeStream.classList.add("active");
+      btnModeSingle.classList.remove("active");
+      streamSection.style.display = "flex";
+      renderHistoryStaff();
+    });
+
+    document.getElementById("btnClearHistory").addEventListener("click", () => {
       historyEvents.length = 0;
-      renderBottomStaff();
+      renderHistoryStaff();
     });
 
-    // MIDI Connection
+    // --- MIDI Setup ---
     document.getElementById("btnReconnect").addEventListener("click", initMIDI);
 
     function initMIDI() {
       if (!navigator.requestMIDIAccess) {
-        document.getElementById("debug-info").innerText = "Web MIDI API not supported in this browser. On-screen piano and keyboard are fully active!";
+        document.getElementById("debug-info").innerText = "Web MIDI API not supported in this browser. Virtual keys active!";
         return;
       }
       navigator.requestMIDIAccess({ sysex: false }).then(onMIDISuccess, (err) => {
@@ -621,7 +834,6 @@
     window.addEventListener("DOMContentLoaded", () => {
       initMIDI();
       renderCurrentStaff([]);
-      renderBottomStaff();
       
       const c4Key = keyElements.get(60);
       if (c4Key) {
@@ -643,7 +855,6 @@
     function triggerNoteOn(midi, velocity, isVirtual = false) {
       playPianoTone(midi);
 
-      // איפוס תצוגה ישנה רק כשהחל סבב נגינה חדש לחלוטין
       if (physicallyHeldKeys.size === 0 && displayedNotes.length > 0) {
         clearDisplayedColors();
         displayedNotes = [];
@@ -700,7 +911,7 @@
       renderCurrentStaff(sorted);
     }
 
-    // Computer QWERTY Keyboard
+    // QWERTY Mapping
     const keyMap = {
       'a': 60, 'w': 61, 's': 62, 'e': 63, 'd': 64, 'f': 65,
       't': 66, 'g': 67, 'y': 68, 'h': 69, 'u': 70, 'j': 71, 'k': 72
@@ -709,17 +920,13 @@
     window.addEventListener("keydown", (e) => {
       if (e.repeat || e.target.tagName === "INPUT") return;
       const k = e.key.toLowerCase();
-      if (keyMap[k]) {
-        triggerNoteOn(keyMap[k], 100, true);
-      }
+      if (keyMap[k]) triggerNoteOn(keyMap[k], 100, true);
     });
 
     window.addEventListener("keyup", (e) => {
       if (e.target.tagName === "INPUT") return;
       const k = e.key.toLowerCase();
-      if (keyMap[k]) {
-        triggerNoteOff(keyMap[k]);
-      }
+      if (keyMap[k]) triggerNoteOff(keyMap[k]);
     });
 
     function recordForHistory(midi) {
@@ -730,17 +937,16 @@
           const chord = Array.from(new Set(currentChordNotes)).sort((a, b) => a - b);
           historyEvents.push(chord);
           currentChordNotes = [];
-          renderBottomStaff();
+          if (viewMode === "stream") renderHistoryStaff();
         }
       }, 40);
     }
 
-    // Multi-Clef Filtering Rule: Dual middle octaves (C3 <= midi < C5)
     function buildClefNote(notes, clef) {
       const filtered = notes.filter(n => {
-        const isMiddleOctave = (n >= 48 && n < 72); // C3 to B4
+        const isMiddleOctave = (n >= 48 && n < 72);
         if (dualMiddleOctaves && isMiddleOctave) {
-          return true; // Show in both Treble and Bass!
+          return true;
         }
         return clef === "treble" ? n >= 60 : n < 60;
       });
@@ -792,74 +998,48 @@
       }
     }
 
-    function renderBottomStaff() {
+    function renderHistoryStaff() {
       const container = document.getElementById("historyStaff");
       container.innerHTML = "";
+      if (historyEvents.length === 0) return;
 
-      if (viewMode === "single") {
-        // Single Stave Mode: shows only the very last played voicing
-        const lastNotes = historyEvents.length > 0 ? historyEvents[historyEvents.length - 1] : [];
-        const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
-        renderer.resize(250, 230);
-        const context = renderer.getContext();
+      const spacing = 75;
+      const width = Math.max(300, 70 + historyEvents.length * spacing);
 
-        const trebleStave = new VF.Stave(20, 10, 200);
-        trebleStave.addClef("treble").setContext(context).draw();
+      const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
+      renderer.resize(width, 230);
+      const context = renderer.getContext();
 
-        const bassStave = new VF.Stave(20, 115, 200);
-        bassStave.addClef("bass").setContext(context).draw();
+      const trebleStave = new VF.Stave(20, 10, width - 30);
+      trebleStave.addClef("treble").setContext(context).draw();
 
-        new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.BRACE).setContext(context).draw();
-        new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(context).draw();
+      const bassStave = new VF.Stave(20, 115, width - 30);
+      bassStave.addClef("bass").setContext(context).draw();
 
-        if (lastNotes.length > 0) {
-          const tNote = buildClefNote(lastNotes, "treble");
-          const bNote = buildClefNote(lastNotes, "bass");
-          VF.Formatter.FormatAndDraw(context, trebleStave, [tNote]);
-          VF.Formatter.FormatAndDraw(context, bassStave, [bNote]);
-        }
-      } else {
-        // Stream Mode: shows continuous history
-        if (historyEvents.length === 0) return;
+      new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.BRACE).setContext(context).draw();
+      new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(context).draw();
 
-        const spacing = 75;
-        const width = Math.max(300, 70 + historyEvents.length * spacing);
+      const tNotes = [];
+      const bNotes = [];
 
-        const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
-        renderer.resize(width, 230);
-        const context = renderer.getContext();
+      historyEvents.forEach(chord => {
+        tNotes.push(buildClefNote(chord, "treble"));
+        bNotes.push(buildClefNote(chord, "bass"));
+      });
 
-        const trebleStave = new VF.Stave(20, 10, width - 30);
-        trebleStave.addClef("treble").setContext(context).draw();
+      const voiceT = new VF.Voice({ num_beats: historyEvents.length, beat_value: 1 }).setStrict(false);
+      voiceT.addTickables(tNotes);
 
-        const bassStave = new VF.Stave(20, 115, width - 30);
-        bassStave.addClef("bass").setContext(context).draw();
+      const voiceB = new VF.Voice({ num_beats: historyEvents.length, beat_value: 1 }).setStrict(false);
+      voiceB.addTickables(bNotes);
 
-        new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.BRACE).setContext(context).draw();
-        new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(context).draw();
+      new VF.Formatter().joinVoices([voiceT]).joinVoices([voiceB]).format([voiceT, voiceB], width - 90);
 
-        const tNotes = [];
-        const bNotes = [];
+      voiceT.draw(context, trebleStave);
+      voiceB.draw(context, bassStave);
 
-        historyEvents.forEach(chord => {
-          tNotes.push(buildClefNote(chord, "treble"));
-          bNotes.push(buildClefNote(chord, "bass"));
-        });
-
-        const voiceT = new VF.Voice({ num_beats: historyEvents.length, beat_value: 1 }).setStrict(false);
-        voiceT.addTickables(tNotes);
-
-        const voiceB = new VF.Voice({ num_beats: historyEvents.length, beat_value: 1 }).setStrict(false);
-        voiceB.addTickables(bNotes);
-
-        new VF.Formatter().joinVoices([voiceT]).joinVoices([voiceB]).format([voiceT, voiceB], width - 90);
-
-        voiceT.draw(context, trebleStave);
-        voiceB.draw(context, bassStave);
-
-        const wrap = document.getElementById("historyWrap");
-        wrap.scrollLeft = wrap.scrollWidth;
-      }
+      const wrap = document.getElementById("historyWrap");
+      wrap.scrollLeft = wrap.scrollWidth;
     }
   </script>
 </body>
