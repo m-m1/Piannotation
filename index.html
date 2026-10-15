@@ -136,7 +136,7 @@
       display: flex;
       gap: 8px;
       justify-content: center;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       flex-wrap: wrap;
     }
 
@@ -160,6 +160,12 @@
       font-size: 0.75rem;
       color: var(--accent);
       margin-bottom: 8px;
+    }
+
+    #demo-tip {
+      font-size: 0.75rem;
+      color: var(--text-sub);
+      margin-bottom: 10px;
     }
 
     /* Output Badge */
@@ -211,6 +217,7 @@
       overflow-x: auto;
       padding-bottom: 6px;
       border-radius: 8px;
+      touch-action: pan-x;
     }
 
     #keyboard {
@@ -227,6 +234,7 @@
       position: relative;
       border-radius: 0 0 4px 4px;
       transition: background-color 0.1s ease, transform 0.05s ease;
+      cursor: pointer;
     }
 
     .key.white {
@@ -296,14 +304,15 @@
   </div>
 
   <div id="debug-info">Scanning for MIDI devices...</div>
-  <div id="output-badge">Play keys on your piano...</div>
+  <div id="demo-tip">💡 No MIDI? Click or touch on-screen keys, or use your computer keyboard (A-K)!</div>
+  <div id="output-badge">Play keys on your piano or screen...</div>
 
   <div class="section-label">Live Voicing</div>
   <div id="current-staff-card">
     <div id="currentStaff"></div>
   </div>
 
-  <div class="keyboard-scroll-wrap">
+  <div class="keyboard-scroll-wrap" id="kbWrap">
     <div id="keyboard"></div>
   </div>
 
@@ -330,7 +339,65 @@
       { letter: "b",  base: "b", isSharp: false, name: "B",  solfege: "Si",  color: "#ec4899" }
     ];
 
-    // Build Keyboard
+    // State
+    const activeKeys = new Set();
+    const historyEvents = [];
+    let pendingChordTimeout = null;
+    let currentChordNotes = [];
+
+    // Web Audio Synthesizer (for virtual piano demo sound)
+    let audioCtx = null;
+    const activeOscillators = new Map();
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function midiToFreq(midi) {
+      return 440 * Math.pow(2, (midi - 69) / 12);
+    }
+
+    function playSynthTone(midi) {
+      const ctx = getAudioContext();
+      if (activeOscillators.has(midi)) return;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "triangle"; // Warm, piano-like tone
+      osc.frequency.setValueAtTime(midiToFreq(midi), ctx.currentTime);
+
+      gain.gain.setValueAtTime(0.001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+
+      activeOscillators.set(midi, { osc, gain });
+    }
+
+    function stopSynthTone(midi) {
+      const entry = activeOscillators.get(midi);
+      if (!entry) return;
+      const ctx = getAudioContext();
+      entry.gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15);
+      setTimeout(() => {
+        try {
+          entry.osc.stop();
+          entry.osc.disconnect();
+        } catch(e) {}
+      }, 160);
+      activeOscillators.delete(midi);
+    }
+
+    // Build Keyboard with Virtual Interaction
     const keyboardEl = document.getElementById("keyboard");
     const keyElements = new Map();
 
@@ -339,18 +406,27 @@
       const el = document.createElement("div");
       el.className = `key ${data.isSharp ? 'black' : 'white'}`;
       el.dataset.midi = midi;
+
+      // Pointer events for mouse & touch
+      el.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        triggerNoteOn(midi, 100, true);
+      });
+
+      const endHandler = (e) => {
+        e.preventDefault();
+        triggerNoteOff(midi);
+      };
+
+      el.addEventListener("pointerup", endHandler);
+      el.addEventListener("pointerleave", endHandler);
+      el.addEventListener("pointercancel", endHandler);
+
       keyboardEl.appendChild(el);
       keyElements.set(midi, { el, data });
     }
 
-    // State
-    const activeKeys = new Set();
-    const historyEvents = [];
-    let pendingChordTimeout = null;
-    let currentChordNotes = [];
-
-    // Metronome Implementation (Web Audio)
-    let audioCtx = null;
+    // Metronome Implementation
     let isMetroRunning = false;
     let metroInterval = null;
     let currentBpm = 120;
@@ -359,17 +435,17 @@
     const btnToggleMetro = document.getElementById("btnToggleMetro");
 
     function playClick() {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
+      const ctx = getAudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
       osc.type = "sine";
       osc.frequency.value = 1000;
-      gain.gain.setValueAtTime(1, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+      gain.gain.setValueAtTime(1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
       osc.connect(gain);
-      gain.connect(audioCtx.destination);
+      gain.connect(ctx.destination);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.05);
+      osc.stop(ctx.currentTime + 0.05);
     }
 
     function startMetronome() {
@@ -414,7 +490,7 @@
       if (isMetroRunning) startMetronome();
     });
 
-    // Auto-Connect MIDI
+    // MIDI Connection
     document.getElementById("btnReconnect").addEventListener("click", initMIDI);
     document.getElementById("btnClearHistory").addEventListener("click", () => {
       historyEvents.length = 0;
@@ -423,7 +499,7 @@
 
     function initMIDI() {
       if (!navigator.requestMIDIAccess) {
-        document.getElementById("debug-info").innerText = "Web MIDI API not supported in this browser.";
+        document.getElementById("debug-info").innerText = "Web MIDI API not supported in this browser (Try Chrome/Edge/Android). Virtual keyboard is fully active!";
         return;
       }
       navigator.requestMIDIAccess({ sysex: false }).then(onMIDISuccess, (err) => {
@@ -444,7 +520,7 @@
         debug.innerText = `Connected: ${inputs.join(", ")}`;
         btn.innerText = `MIDI: Connected (${inputs.length})`;
       } else {
-        debug.innerText = "Listening for MIDI hardware...";
+        debug.innerText = "Listening for MIDI hardware (Virtual keyboard active)...";
         btn.innerText = "MIDI: Reconnect";
       }
     }
@@ -454,10 +530,15 @@
       midiAccess.onstatechange = () => bindInputs(midiAccess);
     }
 
-    // Auto-trigger on load
     window.addEventListener("DOMContentLoaded", () => {
       initMIDI();
       renderCurrentStaff([]);
+      
+      // Auto-scroll keyboard view to Middle C (C4) on mobile
+      const c4Key = keyElements.get(60);
+      if (c4Key) {
+        c4Key.el.scrollIntoView({ inline: "center", behavior: "smooth" });
+      }
     });
 
     function handleMIDIMessage(event) {
@@ -465,16 +546,50 @@
       const command = status & 0xf0;
 
       if (command === 0x90 && velocity > 0) {
-        activeKeys.add(noteNumber);
-        highlightKey(noteNumber);
-        recordForHistory(noteNumber);
-        updateLiveView();
+        triggerNoteOn(noteNumber, velocity, false);
       } else if (command === 0x80 || (command === 0x90 && velocity === 0)) {
-        activeKeys.delete(noteNumber);
-        unhighlightKey(noteNumber);
-        updateLiveView();
+        triggerNoteOff(noteNumber);
       }
     }
+
+    // Unified Note Trigger (Hardware + Virtual UI)
+    function triggerNoteOn(midi, velocity, isVirtual = false) {
+      if (isVirtual) playSynthTone(midi);
+
+      activeKeys.add(midi);
+      highlightKey(midi);
+      recordForHistory(midi);
+      updateLiveView();
+    }
+
+    function triggerNoteOff(midi) {
+      stopSynthTone(midi);
+      activeKeys.delete(midi);
+      unhighlightKey(midi);
+      updateLiveView();
+    }
+
+    // Computer QWERTY Keyboard Mapping (Middle C octave: C4 to C5)
+    const keyMap = {
+      'a': 60, 'w': 61, 's': 62, 'e': 63, 'd': 64, 'f': 65,
+      't': 66, 'g': 67, 'y': 68, 'h': 69, 'u': 70, 'j': 71, 'k': 72
+    };
+
+    window.addEventListener("keydown", (e) => {
+      if (e.repeat || e.target.tagName === "INPUT") return;
+      const k = e.key.toLowerCase();
+      if (keyMap[k]) {
+        triggerNoteOn(keyMap[k], 100, true);
+      }
+    });
+
+    window.addEventListener("keyup", (e) => {
+      if (e.target.tagName === "INPUT") return;
+      const k = e.key.toLowerCase();
+      if (keyMap[k]) {
+        triggerNoteOff(keyMap[k]);
+      }
+    });
 
     function highlightKey(midi) {
       const item = keyElements.get(midi);
