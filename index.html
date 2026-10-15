@@ -340,12 +340,13 @@
     ];
 
     // State
-    const activeKeys = new Set();
+    const physicallyHeldKeys = new Set(); // קלידים שלחוצים פיזית ברגע זה
+    let displayedNotes = [];              // התווים שמוצגים כעת (נשמרים עד הנגינה הבאה)
     const historyEvents = [];
     let pendingChordTimeout = null;
     let currentChordNotes = [];
 
-    // Web Audio Synthesizer (for virtual piano demo sound)
+    // Web Audio Synthesizer
     let audioCtx = null;
     const activeOscillators = new Map();
 
@@ -370,7 +371,7 @@
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
-      osc.type = "triangle"; // Warm, piano-like tone
+      osc.type = "triangle";
       osc.frequency.setValueAtTime(midiToFreq(midi), ctx.currentTime);
 
       gain.gain.setValueAtTime(0.001, ctx.currentTime);
@@ -397,7 +398,7 @@
       activeOscillators.delete(midi);
     }
 
-    // Build Keyboard with Virtual Interaction
+    // Build Keyboard
     const keyboardEl = document.getElementById("keyboard");
     const keyElements = new Map();
 
@@ -407,7 +408,6 @@
       el.className = `key ${data.isSharp ? 'black' : 'white'}`;
       el.dataset.midi = midi;
 
-      // Pointer events for mouse & touch
       el.addEventListener("pointerdown", (e) => {
         e.preventDefault();
         triggerNoteOn(midi, 100, true);
@@ -534,7 +534,6 @@
       initMIDI();
       renderCurrentStaff([]);
       
-      // Auto-scroll keyboard view to Middle C (C4) on mobile
       const c4Key = keyElements.get(60);
       if (c4Key) {
         c4Key.el.scrollIntoView({ inline: "center", behavior: "smooth" });
@@ -552,24 +551,70 @@
       }
     }
 
-    // Unified Note Trigger (Hardware + Virtual UI)
+    // Unified Note Trigger with Persistent Voicing
     function triggerNoteOn(midi, velocity, isVirtual = false) {
       if (isVirtual) playSynthTone(midi);
 
-      activeKeys.add(midi);
-      highlightKey(midi);
+      // אם כל הקלידים הקודמים כבר נעזבו וזהו תחילתו של סבב נגינה חדש - ננקה את הצביעה הקודמת
+      if (physicallyHeldKeys.size === 0 && displayedNotes.length > 0) {
+        clearDisplayedColors();
+        displayedNotes = [];
+      }
+
+      physicallyHeldKeys.add(midi);
+      if (!displayedNotes.includes(midi)) {
+        displayedNotes.push(midi);
+      }
+
+      // הוספת אפקט לחיצה שוקעת + צבע לקליד
+      const item = keyElements.get(midi);
+      if (item) {
+        item.el.classList.add("pressed");
+        item.el.style.backgroundColor = item.data.color;
+        item.el.style.boxShadow = `0 0 12px ${item.data.color}`;
+      }
+
       recordForHistory(midi);
-      updateLiveView();
+      updateLiveVoicingDisplay();
     }
 
     function triggerNoteOff(midi) {
       stopSynthTone(midi);
-      activeKeys.delete(midi);
-      unhighlightKey(midi);
-      updateLiveView();
+      physicallyHeldKeys.delete(midi);
+
+      // שחרור רק של האפקט השוקע; הצבע והחמשה נשארים!
+      const item = keyElements.get(midi);
+      if (item) {
+        item.el.classList.remove("pressed");
+      }
     }
 
-    // Computer QWERTY Keyboard Mapping (Middle C octave: C4 to C5)
+    function clearDisplayedColors() {
+      displayedNotes.forEach(m => {
+        const item = keyElements.get(m);
+        if (item) {
+          item.el.style.backgroundColor = item.data.isSharp ? '#18181b' : '#fdfdfd';
+          item.el.style.boxShadow = item.data.isSharp ? 'inset 0 -2px 3px rgba(255,255,255,0.15)' : 'none';
+        }
+      });
+    }
+
+    function updateLiveVoicingDisplay() {
+      if (displayedNotes.length === 0) return;
+
+      const badge = document.getElementById("output-badge");
+      const sorted = [...displayedNotes].sort((a, b) => a - b);
+      const labels = sorted.map(m => {
+        const d = noteMap[m % 12];
+        const oct = Math.floor(m / 12) - 1;
+        return `${d.name}${oct} (${d.solfege})`;
+      });
+
+      badge.innerText = labels.join(" • ");
+      renderCurrentStaff(sorted);
+    }
+
+    // Computer QWERTY Keyboard Mapping
     const keyMap = {
       'a': 60, 'w': 61, 's': 62, 'e': 63, 'd': 64, 'f': 65,
       't': 66, 'g': 67, 'y': 68, 'h': 69, 'u': 70, 'j': 71, 'k': 72
@@ -591,22 +636,6 @@
       }
     });
 
-    function highlightKey(midi) {
-      const item = keyElements.get(midi);
-      if (!item) return;
-      item.el.classList.add("pressed");
-      item.el.style.backgroundColor = item.data.color;
-      item.el.style.boxShadow = `0 0 12px ${item.data.color}`;
-    }
-
-    function unhighlightKey(midi) {
-      const item = keyElements.get(midi);
-      if (!item) return;
-      item.el.classList.remove("pressed");
-      item.el.style.backgroundColor = item.data.isSharp ? '#18181b' : '#fdfdfd';
-      item.el.style.boxShadow = item.data.isSharp ? 'inset 0 -2px 3px rgba(255,255,255,0.15)' : 'none';
-    }
-
     function recordForHistory(midi) {
       currentChordNotes.push(midi);
       clearTimeout(pendingChordTimeout);
@@ -618,26 +647,6 @@
           renderHistoryStaff();
         }
       }, 35);
-    }
-
-    function updateLiveView() {
-      const badge = document.getElementById("output-badge");
-      if (activeKeys.size === 0) {
-        badge.innerText = "Keys released - waiting...";
-        badge.style.color = "var(--accent)";
-        renderCurrentStaff([]);
-        return;
-      }
-
-      const sorted = Array.from(activeKeys).sort((a, b) => a - b);
-      const labels = sorted.map(m => {
-        const d = noteMap[m % 12];
-        const oct = Math.floor(m / 12) - 1;
-        return `${d.name}${oct} (${d.solfege})`;
-      });
-
-      badge.innerText = labels.join(" • ");
-      renderCurrentStaff(sorted);
     }
 
     function buildClefNote(notes, clef) {
