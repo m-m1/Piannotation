@@ -2,7 +2,7 @@
 
 > **Real-time pitch detection, dynamic polyphonic keyboard mapping, and continuous dual-stave musical notation via the Web MIDI API.**
 
-[🔗 Live Demo](https://<your-username>.github.io/Piannotation/)
+[🔗 Live Demo](https://m-m1.github.io/Piannotation/)
 
 ---
 
@@ -23,6 +23,6 @@
 - **HTML5 & Modern CSS3**
 
 ## 🚀 Getting Started
-1. Open the [Live Demo](https://<your-username>.github.io/Piannotation/) on a Web MIDI-compatible browser (Google Chrome, Edge, or Android WebViews).
+1. Open the [Live Demo](https://m-m1.github.io/Piannotation/) on a Web MIDI-compatible browser (Google Chrome, Edge, or Android WebViews).
 2. Connect your digital piano via USB-MIDI / Bluetooth.
 3. Start playing—the application automatically detects incoming MIDI messages and visualizes the notes.
