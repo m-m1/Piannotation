@@ -141,19 +141,25 @@
     }
 
     .btn-secondary {
-      padding: 7px 16px;
-      font-size: 0.8rem;
+      padding: 6px 14px;
+      font-size: 0.78rem;
       font-weight: 600;
       border-radius: 9999px;
       border: 1px solid rgba(255, 255, 255, 0.12);
       background: #1e293b;
       color: var(--text-sub);
       cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-secondary.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #38bdf8;
     }
 
     .btn-secondary:active {
       background: #334155;
-      color: #fff;
     }
 
     #debug-info {
@@ -188,21 +194,35 @@
       overflow-x: auto;
     }
 
+    .section-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 96vw;
+      padding: 0 4px;
+      margin-bottom: 6px;
+      margin-top: 14px;
+    }
+
     .section-label {
       font-size: 0.8rem;
       color: var(--text-sub);
-      margin-bottom: 4px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       font-weight: 700;
     }
 
-    /* Live Staff */
-    #current-staff-card {
+    /* Staff Cards */
+    #current-staff-card, .history-scroll-wrap {
       background: #ffffff;
-      padding: 8px 12px;
       border-radius: 14px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      direction: ltr;
+    }
+
+    #current-staff-card {
+      padding: 8px 12px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -262,16 +282,14 @@
       transform: translateY(3px);
     }
 
-    /* History Staff */
     .history-scroll-wrap {
-      margin-top: 6px;
       max-width: 96vw;
-      background: #ffffff;
-      border-radius: 14px;
       overflow-x: auto;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
       padding: 10px 12px;
-      direction: ltr;
+      min-height: 230px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     #historyStaff {
@@ -300,7 +318,8 @@
 
   <div class="actions-bar">
     <button class="btn-secondary" id="btnReconnect">MIDI: Auto-Connecting...</button>
-    <button class="btn-secondary" id="btnClearHistory">Clear Notation</button>
+    <button class="btn-secondary active" id="btnToggleDualMiddle">Dual Middle Octaves (C3–C5): ON</button>
+    <button class="btn-secondary" id="btnToggleViewMode">Mode: Single Stave</button>
   </div>
 
   <div id="debug-info">Scanning for MIDI devices...</div>
@@ -316,7 +335,12 @@
     <div id="keyboard"></div>
   </div>
 
-  <div class="section-label" style="margin-top: 14px;">Notation Stream</div>
+  <!-- Bottom Staff Section with Local Clear -->
+  <div class="section-header-row">
+    <div class="section-label" id="bottomStaffLabel">Last Played Notation (Single)</div>
+    <button class="btn-secondary" id="btnClearHistory" style="display: none;">Clear Notation</button>
+  </div>
+
   <div class="history-scroll-wrap" id="historyWrap">
     <div id="historyStaff"></div>
   </div>
@@ -339,16 +363,19 @@
       { letter: "b",  base: "b", isSharp: false, name: "B",  solfege: "Si",  color: "#ec4899" }
     ];
 
-    // State
-    const physicallyHeldKeys = new Set(); // קלידים שלחוצים פיזית ברגע זה
-    let displayedNotes = [];              // התווים שמוצגים כעת (נשמרים עד הנגינה הבאה)
+    // Options & State
+    let dualMiddleOctaves = true;
+    let viewMode = "single"; // "single" | "stream"
+
+    const physicallyHeldKeys = new Set();
+    let displayedNotes = [];
     const historyEvents = [];
     let pendingChordTimeout = null;
     let currentChordNotes = [];
 
-    // Web Audio Synthesizer
+    // Realistic Web Audio Acoustic Piano Synthesizer
     let audioCtx = null;
-    const activeOscillators = new Map();
+    const activeVoices = new Map();
 
     function getAudioContext() {
       if (!audioCtx) {
@@ -364,38 +391,69 @@
       return 440 * Math.pow(2, (midi - 69) / 12);
     }
 
-    function playSynthTone(midi) {
+    function playPianoTone(midi) {
       const ctx = getAudioContext();
-      if (activeOscillators.has(midi)) return;
+      if (activeVoices.has(midi)) {
+        stopPianoTone(midi, true);
+      }
 
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      const freq = midiToFreq(midi);
+      const now = ctx.currentTime;
 
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(midiToFreq(midi), ctx.currentTime);
+      // Filter (simulates hammer dampening)
+      const filter = ctx.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(Math.min(freq * 5.5, 9000), now);
+      filter.frequency.exponentialRampToValueAtTime(Math.max(freq * 1.5, 400), now + 1.8);
 
-      gain.gain.setValueAtTime(0.001, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+      const mainGain = ctx.createGain();
+      mainGain.gain.setValueAtTime(0.001, now);
+      mainGain.gain.linearRampToValueAtTime(0.65, now + 0.012); // Sharp piano attack
+      mainGain.gain.exponentialRampToValueAtTime(0.35, now + 0.25); // Initial decay
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
+      // Oscillators (Harmonics: Fundamental + Overtone + Hammer Strike)
+      const osc1 = ctx.createOscillator();
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(freq, now);
 
-      activeOscillators.set(midi, { osc, gain });
+      const osc2 = ctx.createOscillator();
+      osc2.type = "triangle";
+      osc2.frequency.setValueAtTime(freq * 2, now);
+
+      const gain2 = ctx.createGain();
+      gain2.gain.value = 0.35;
+
+      osc1.connect(mainGain);
+      osc2.connect(gain2);
+      gain2.connect(mainGain);
+
+      mainGain.connect(filter);
+      filter.connect(ctx.destination);
+
+      osc1.start(now);
+      osc2.start(now);
+
+      activeVoices.set(midi, { oscs: [osc1, osc2], mainGain, filter });
     }
 
-    function stopSynthTone(midi) {
-      const entry = activeOscillators.get(midi);
-      if (!entry) return;
+    function stopPianoTone(midi, immediate = false) {
+      const voice = activeVoices.get(midi);
+      if (!voice) return;
       const ctx = getAudioContext();
-      entry.gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15);
+      const now = ctx.currentTime;
+      const releaseTime = immediate ? 0.05 : 0.85; // Natural piano ring-out sustain
+
+      voice.mainGain.gain.cancelScheduledValues(now);
+      voice.mainGain.gain.setValueAtTime(voice.mainGain.gain.value, now);
+      voice.mainGain.gain.exponentialRampToValueAtTime(0.0001, now + releaseTime);
+
       setTimeout(() => {
-        try {
-          entry.osc.stop();
-          entry.osc.disconnect();
-        } catch(e) {}
-      }, 160);
-      activeOscillators.delete(midi);
+        voice.oscs.forEach(osc => {
+          try { osc.stop(); osc.disconnect(); } catch(e) {}
+        });
+      }, releaseTime * 1000 + 50);
+
+      activeVoices.delete(midi);
     }
 
     // Build Keyboard
@@ -426,7 +484,7 @@
       keyElements.set(midi, { el, data });
     }
 
-    // Metronome Implementation
+    // Metronome
     let isMetroRunning = false;
     let metroInterval = null;
     let currentBpm = 120;
@@ -490,16 +548,46 @@
       if (isMetroRunning) startMetronome();
     });
 
+    // Option Toggles
+    const btnToggleDualMiddle = document.getElementById("btnToggleDualMiddle");
+    btnToggleDualMiddle.addEventListener("click", () => {
+      dualMiddleOctaves = !dualMiddleOctaves;
+      btnToggleDualMiddle.innerText = `Dual Middle Octaves (C3–C5): ${dualMiddleOctaves ? 'ON' : 'OFF'}`;
+      btnToggleDualMiddle.classList.toggle("active", dualMiddleOctaves);
+      updateLiveVoicingDisplay();
+      renderBottomStaff();
+    });
+
+    const btnToggleViewMode = document.getElementById("btnToggleViewMode");
+    const bottomStaffLabel = document.getElementById("bottomStaffLabel");
+    const btnClearHistory = document.getElementById("btnClearHistory");
+
+    btnToggleViewMode.addEventListener("click", () => {
+      if (viewMode === "single") {
+        viewMode = "stream";
+        btnToggleViewMode.innerText = "Mode: Stream (Continuous)";
+        bottomStaffLabel.innerText = "Continuous Notation Stream";
+        btnClearHistory.style.display = "inline-block";
+      } else {
+        viewMode = "single";
+        btnToggleViewMode.innerText = "Mode: Single Stave";
+        bottomStaffLabel.innerText = "Last Played Notation (Single)";
+        btnClearHistory.style.display = "none";
+      }
+      renderBottomStaff();
+    });
+
+    btnClearHistory.addEventListener("click", () => {
+      historyEvents.length = 0;
+      renderBottomStaff();
+    });
+
     // MIDI Connection
     document.getElementById("btnReconnect").addEventListener("click", initMIDI);
-    document.getElementById("btnClearHistory").addEventListener("click", () => {
-      historyEvents.length = 0;
-      renderHistoryStaff();
-    });
 
     function initMIDI() {
       if (!navigator.requestMIDIAccess) {
-        document.getElementById("debug-info").innerText = "Web MIDI API not supported in this browser (Try Chrome/Edge/Android). Virtual keyboard is fully active!";
+        document.getElementById("debug-info").innerText = "Web MIDI API not supported in this browser. On-screen piano and keyboard are fully active!";
         return;
       }
       navigator.requestMIDIAccess({ sysex: false }).then(onMIDISuccess, (err) => {
@@ -533,6 +621,7 @@
     window.addEventListener("DOMContentLoaded", () => {
       initMIDI();
       renderCurrentStaff([]);
+      renderBottomStaff();
       
       const c4Key = keyElements.get(60);
       if (c4Key) {
@@ -551,11 +640,10 @@
       }
     }
 
-    // Unified Note Trigger with Persistent Voicing
     function triggerNoteOn(midi, velocity, isVirtual = false) {
-      if (isVirtual) playSynthTone(midi);
+      playPianoTone(midi);
 
-      // אם כל הקלידים הקודמים כבר נעזבו וזהו תחילתו של סבב נגינה חדש - ננקה את הצביעה הקודמת
+      // איפוס תצוגה ישנה רק כשהחל סבב נגינה חדש לחלוטין
       if (physicallyHeldKeys.size === 0 && displayedNotes.length > 0) {
         clearDisplayedColors();
         displayedNotes = [];
@@ -566,7 +654,6 @@
         displayedNotes.push(midi);
       }
 
-      // הוספת אפקט לחיצה שוקעת + צבע לקליד
       const item = keyElements.get(midi);
       if (item) {
         item.el.classList.add("pressed");
@@ -579,10 +666,9 @@
     }
 
     function triggerNoteOff(midi) {
-      stopSynthTone(midi);
+      stopPianoTone(midi);
       physicallyHeldKeys.delete(midi);
 
-      // שחרור רק של האפקט השוקע; הצבע והחמשה נשארים!
       const item = keyElements.get(midi);
       if (item) {
         item.el.classList.remove("pressed");
@@ -614,7 +700,7 @@
       renderCurrentStaff(sorted);
     }
 
-    // Computer QWERTY Keyboard Mapping
+    // Computer QWERTY Keyboard
     const keyMap = {
       'a': 60, 'w': 61, 's': 62, 'e': 63, 'd': 64, 'f': 65,
       't': 66, 'g': 67, 'y': 68, 'h': 69, 'u': 70, 'j': 71, 'k': 72
@@ -644,13 +730,21 @@
           const chord = Array.from(new Set(currentChordNotes)).sort((a, b) => a - b);
           historyEvents.push(chord);
           currentChordNotes = [];
-          renderHistoryStaff();
+          renderBottomStaff();
         }
-      }, 35);
+      }, 40);
     }
 
+    // Multi-Clef Filtering Rule: Dual middle octaves (C3 <= midi < C5)
     function buildClefNote(notes, clef) {
-      const filtered = notes.filter(n => clef === "treble" ? n >= 60 : n < 60);
+      const filtered = notes.filter(n => {
+        const isMiddleOctave = (n >= 48 && n < 72); // C3 to B4
+        if (dualMiddleOctaves && isMiddleOctave) {
+          return true; // Show in both Treble and Bass!
+        }
+        return clef === "treble" ? n >= 60 : n < 60;
+      });
+
       if (filtered.length === 0) {
         return new VF.StaveNote({
           clef: clef,
@@ -698,48 +792,74 @@
       }
     }
 
-    function renderHistoryStaff() {
+    function renderBottomStaff() {
       const container = document.getElementById("historyStaff");
       container.innerHTML = "";
-      if (historyEvents.length === 0) return;
 
-      const spacing = 75;
-      const width = Math.max(300, 70 + historyEvents.length * spacing);
+      if (viewMode === "single") {
+        // Single Stave Mode: shows only the very last played voicing
+        const lastNotes = historyEvents.length > 0 ? historyEvents[historyEvents.length - 1] : [];
+        const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
+        renderer.resize(250, 230);
+        const context = renderer.getContext();
 
-      const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
-      renderer.resize(width, 230);
-      const context = renderer.getContext();
+        const trebleStave = new VF.Stave(20, 10, 200);
+        trebleStave.addClef("treble").setContext(context).draw();
 
-      const trebleStave = new VF.Stave(20, 10, width - 30);
-      trebleStave.addClef("treble").setContext(context).draw();
+        const bassStave = new VF.Stave(20, 115, 200);
+        bassStave.addClef("bass").setContext(context).draw();
 
-      const bassStave = new VF.Stave(20, 115, width - 30);
-      bassStave.addClef("bass").setContext(context).draw();
+        new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.BRACE).setContext(context).draw();
+        new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(context).draw();
 
-      new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.BRACE).setContext(context).draw();
-      new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(context).draw();
+        if (lastNotes.length > 0) {
+          const tNote = buildClefNote(lastNotes, "treble");
+          const bNote = buildClefNote(lastNotes, "bass");
+          VF.Formatter.FormatAndDraw(context, trebleStave, [tNote]);
+          VF.Formatter.FormatAndDraw(context, bassStave, [bNote]);
+        }
+      } else {
+        // Stream Mode: shows continuous history
+        if (historyEvents.length === 0) return;
 
-      const tNotes = [];
-      const bNotes = [];
+        const spacing = 75;
+        const width = Math.max(300, 70 + historyEvents.length * spacing);
 
-      historyEvents.forEach(chord => {
-        tNotes.push(buildClefNote(chord, "treble"));
-        bNotes.push(buildClefNote(chord, "bass"));
-      });
+        const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
+        renderer.resize(width, 230);
+        const context = renderer.getContext();
 
-      const voiceT = new VF.Voice({ num_beats: historyEvents.length, beat_value: 1 }).setStrict(false);
-      voiceT.addTickables(tNotes);
+        const trebleStave = new VF.Stave(20, 10, width - 30);
+        trebleStave.addClef("treble").setContext(context).draw();
 
-      const voiceB = new VF.Voice({ num_beats: historyEvents.length, beat_value: 1 }).setStrict(false);
-      voiceB.addTickables(bNotes);
+        const bassStave = new VF.Stave(20, 115, width - 30);
+        bassStave.addClef("bass").setContext(context).draw();
 
-      new VF.Formatter().joinVoices([voiceT]).joinVoices([voiceB]).format([voiceT, voiceB], width - 90);
+        new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.BRACE).setContext(context).draw();
+        new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(context).draw();
 
-      voiceT.draw(context, trebleStave);
-      voiceB.draw(context, bassStave);
+        const tNotes = [];
+        const bNotes = [];
 
-      const wrap = document.getElementById("historyWrap");
-      wrap.scrollLeft = wrap.scrollWidth;
+        historyEvents.forEach(chord => {
+          tNotes.push(buildClefNote(chord, "treble"));
+          bNotes.push(buildClefNote(chord, "bass"));
+        });
+
+        const voiceT = new VF.Voice({ num_beats: historyEvents.length, beat_value: 1 }).setStrict(false);
+        voiceT.addTickables(tNotes);
+
+        const voiceB = new VF.Voice({ num_beats: historyEvents.length, beat_value: 1 }).setStrict(false);
+        voiceB.addTickables(bNotes);
+
+        new VF.Formatter().joinVoices([voiceT]).joinVoices([voiceB]).format([voiceT, voiceB], width - 90);
+
+        voiceT.draw(context, trebleStave);
+        voiceB.draw(context, bassStave);
+
+        const wrap = document.getElementById("historyWrap");
+        wrap.scrollLeft = wrap.scrollWidth;
+      }
     }
   </script>
 </body>
