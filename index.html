@@ -115,7 +115,6 @@
       text-transform: uppercase;
     }
 
-    /* Time Signature Select */
     .select-wrap {
       display: flex;
       align-items: center;
@@ -139,7 +138,6 @@
       color: #fff;
     }
 
-    /* Accent Toggle in Metronome */
     .metro-accent-wrap {
       display: flex;
       align-items: center;
@@ -166,7 +164,7 @@
       box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
     }
 
-    /* Controls & Toggles Toolbar */
+    /* Controls Panel */
     .controls-panel {
       display: flex;
       flex-wrap: wrap;
@@ -188,10 +186,6 @@
       font-size: 0.82rem;
       color: var(--text-sub);
       font-weight: 600;
-    }
-
-    .switch-label {
-      cursor: pointer;
     }
 
     .toggle-switch {
@@ -236,7 +230,6 @@
       transform: translateX(18px);
     }
 
-    /* Multi-Mode Pill Switch */
     .segmented-control {
       display: inline-flex;
       background: #0f172a;
@@ -279,6 +272,27 @@
       color: #fff;
     }
 
+    /* Prominent Centered Clear Button */
+    .btn-clear-prominent {
+      padding: 7px 22px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      border-radius: 9999px;
+      border: 1px solid #ef4444;
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 10px rgba(239, 68, 68, 0.2);
+    }
+
+    .btn-clear-prominent:hover {
+      background: #ef4444;
+      color: #ffffff;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.5);
+    }
+
     #debug-info {
       font-size: 0.75rem;
       color: var(--accent);
@@ -311,17 +325,17 @@
       overflow-x: auto;
     }
 
-    /* Main Staff Card */
+    /* Expanded Main Staff Card with extra vertical clearance */
     #current-staff-card {
       background: #ffffff;
-      padding: 10px 14px;
+      padding: 18px 14px;
       border-radius: 14px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
       display: flex;
       justify-content: center;
       align-items: center;
       min-width: 250px;
-      min-height: 230px;
+      min-height: 320px;
       direction: ltr;
     }
 
@@ -377,45 +391,48 @@
       transform: translateY(3px);
     }
 
-    /* Continuous Stream Section */
+    /* Dynamic Stream Section */
     #streamSection {
       width: 100%;
       max-width: 96vw;
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin-top: 14px;
+      margin-top: 18px;
     }
 
-    .stream-header {
+    .stream-controls-center {
       display: flex;
+      justify-content: center;
       align-items: center;
-      justify-content: space-between;
       width: 100%;
-      margin-bottom: 6px;
-      padding: 0 4px;
+      margin-bottom: 10px;
     }
 
-    .stream-label {
-      font-size: 0.8rem;
-      color: var(--text-sub);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-weight: 700;
+    /* Shrink-to-fit container that grows left-to-right */
+    .history-outer-wrap {
+      max-width: 100%;
+      overflow-x: auto;
+      display: flex;
+      justify-content: center;
+      padding-bottom: 6px;
     }
 
     .history-scroll-wrap {
-      width: 100%;
+      width: fit-content;
+      max-width: 100%;
       background: #ffffff;
       border-radius: 14px;
-      overflow-x: auto;
-      padding: 10px 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      padding: 18px 14px;
       direction: ltr;
-      min-height: 230px;
+      min-height: 320px;
+      display: flex;
+      align-items: center;
     }
 
     #historyStaff {
-      min-height: 230px;
+      min-height: 320px;
       display: inline-block;
     }
   </style>
@@ -427,7 +444,7 @@
     <p class="subtitle">Real-time pitch detection & notation</p>
   </header>
 
-  <!-- Metronome Toolbar with Time Signatures and Accent Switch -->
+  <!-- Metronome Toolbar -->
   <div class="metronome-bar">
     <button class="metro-btn" id="btnBpmDown">−</button>
     <div class="bpm-input-wrap">
@@ -436,7 +453,6 @@
     </div>
     <button class="metro-btn" id="btnBpmUp">+</button>
 
-    <!-- Time Signature Selector -->
     <div class="select-wrap">
       <select id="metroSignature">
         <optgroup label="Standard / Simple">
@@ -460,7 +476,6 @@
       </select>
     </div>
 
-    <!-- Accent First Beat Toggle -->
     <div class="metro-accent-wrap">
       <span>Accent 1st:</span>
       <label class="toggle-switch">
@@ -476,9 +491,8 @@
   <div class="controls-panel">
     <button class="btn-secondary" id="btnReconnect">MIDI: Auto-Connecting...</button>
 
-    <!-- Middle Octaves C3-C5 Switch -->
     <div class="switch-group">
-      <span class="switch-label">Middle Octaves (C3–C5):</span>
+      <span>Middle Octaves (C3–C5):</span>
       <label class="toggle-switch">
         <input type="checkbox" id="switchDualMiddle" checked>
         <span class="slider"></span>
@@ -486,7 +500,6 @@
       <span id="textDualMiddle" style="color: var(--accent); font-weight:700;">ON</span>
     </div>
 
-    <!-- Mode Switch (Single vs Continuous) -->
     <div class="switch-group">
       <span>Mode:</span>
       <div class="segmented-control">
@@ -500,7 +513,7 @@
   <div id="demo-tip">💡 No MIDI? Click or touch on-screen keys, or use your computer keyboard (A-K)!</div>
   <div id="output-badge">Play keys on your piano or screen...</div>
 
-  <!-- Primary Staff Card -->
+  <!-- Primary Staff Card (With room for high & low ledger lines) -->
   <div id="current-staff-card">
     <div id="currentStaff"></div>
   </div>
@@ -510,14 +523,15 @@
     <div id="keyboard"></div>
   </div>
 
-  <!-- Stream Section -->
+  <!-- Continuous Stream Section with Centered Clear Button -->
   <div id="streamSection" style="display: none;">
-    <div class="stream-header">
-      <div class="stream-label">Continuous Notation Stream</div>
-      <button class="btn-secondary" id="btnClearHistory">Clear</button>
+    <div class="stream-controls-center">
+      <button class="btn-clear-prominent" id="btnClearHistory">🗑️ Clear Notation Stream</button>
     </div>
-    <div class="history-scroll-wrap" id="historyWrap">
-      <div id="historyStaff"></div>
+    <div class="history-outer-wrap">
+      <div class="history-scroll-wrap" id="historyWrap" style="display: none;">
+        <div id="historyStaff"></div>
+      </div>
     </div>
   </div>
 
@@ -663,7 +677,7 @@
       keyElements.set(midi, { el, data });
     }
 
-    // --- Metronome Engine with Signatures & Accent ---
+    // --- Metronome Engine ---
     let isMetroRunning = false;
     let metroInterval = null;
     let currentBpm = 120;
@@ -711,7 +725,6 @@
       currentBeatInBar = 0;
 
       const { unit } = getSignatureDetails();
-      // For /8 time signatures, interval is half of /4 tempo
       const multiplier = unit === 8 ? 0.5 : (unit === 2 ? 2.0 : 1.0);
       const intervalMs = (60 / currentBpm) * 1000 * multiplier;
 
@@ -973,18 +986,20 @@
       return staveNote;
     }
 
+    // Increased vertical height to 320px: Treble y=45, Bass y=175
+    // Provides full headroom for high C7/C8 & low A0 ledger lines
     function renderCurrentStaff(midiArray) {
       const container = document.getElementById("currentStaff");
       container.innerHTML = "";
 
       const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
-      renderer.resize(250, 230);
+      renderer.resize(250, 320);
       const context = renderer.getContext();
 
-      const trebleStave = new VF.Stave(20, 10, 200);
+      const trebleStave = new VF.Stave(20, 45, 200);
       trebleStave.addClef("treble").setContext(context).draw();
 
-      const bassStave = new VF.Stave(20, 115, 200);
+      const bassStave = new VF.Stave(20, 175, 200);
       bassStave.addClef("bass").setContext(context).draw();
 
       new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.BRACE).setContext(context).draw();
@@ -1000,20 +1015,27 @@
 
     function renderHistoryStaff() {
       const container = document.getElementById("historyStaff");
+      const wrap = document.getElementById("historyWrap");
       container.innerHTML = "";
-      if (historyEvents.length === 0) return;
+
+      // Hide container entirely if no history exists yet
+      if (historyEvents.length === 0) {
+        wrap.style.display = "none";
+        return;
+      }
+      wrap.style.display = "flex";
 
       const spacing = 75;
-      const width = Math.max(300, 70 + historyEvents.length * spacing);
+      const width = Math.max(260, 70 + historyEvents.length * spacing);
 
       const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
-      renderer.resize(width, 230);
+      renderer.resize(width, 320);
       const context = renderer.getContext();
 
-      const trebleStave = new VF.Stave(20, 10, width - 30);
+      const trebleStave = new VF.Stave(20, 45, width - 30);
       trebleStave.addClef("treble").setContext(context).draw();
 
-      const bassStave = new VF.Stave(20, 115, width - 30);
+      const bassStave = new VF.Stave(20, 175, width - 30);
       bassStave.addClef("bass").setContext(context).draw();
 
       new VF.StaveConnector(trebleStave, bassStave).setType(VF.StaveConnector.type.BRACE).setContext(context).draw();
@@ -1038,8 +1060,8 @@
       voiceT.draw(context, trebleStave);
       voiceB.draw(context, bassStave);
 
-      const wrap = document.getElementById("historyWrap");
-      wrap.scrollLeft = wrap.scrollWidth;
+      const outer = document.querySelector(".history-outer-wrap");
+      if (outer) outer.scrollLeft = outer.scrollWidth;
     }
   </script>
 </body>
